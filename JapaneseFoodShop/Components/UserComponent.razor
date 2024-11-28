@@ -1,0 +1,31 @@
+﻿@page "/User"
+@inject AppDbContext _db
+
+
+<p>@Count</p>
+
+<button @onclick="IncreaseCount">Add</button>
+@if (Roles is not null)
+{
+	foreach (var item in Roles)
+	{
+		<p>@item.Id</p>
+		<p>@item.Name</p>
+		<p>@item.CreatedAt</p>
+	}
+}
+
+
+
+@code {
+	public int Count { get; set; } = 0;
+
+	public List<Role> Roles { get; set; }
+
+	void IncreaseCount() => Count++;
+
+	protected override async Task OnInitializedAsync()
+	{
+		Roles = await _db.Roles.ToListAsync();
+	}
+}

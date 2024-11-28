@@ -1,0 +1,10 @@
+﻿@using JapaneseFoodShop.Components
+@using JapaneseFoodShop.DTOs
+
+@{
+	ViewData["Title"] = "Employees";
+}
+
+@(await Html.RenderComponentAsync<EmployeeComponent>(RenderMode.Server))
+
+

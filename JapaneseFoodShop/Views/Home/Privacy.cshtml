@@ -1,0 +1,7 @@
+﻿@using JapaneseFoodShop.Components
+@{
+    ViewData["Title"] = "Nhan viên";
+}
+<h1>@ViewData["Title"]</h1>
+
+@(await Html.RenderComponentAsync<EmployeeComponent>(RenderMode.Server))

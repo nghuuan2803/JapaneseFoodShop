@@ -1,0 +1,159 @@
+﻿@using JapaneseFoodShop.DTOs
+@using JapaneseFoodShop.Services.Abstracts
+@using System.Linq.Expressions
+<h3>EmployeeComponent</h3>
+@inject IEmployeeService _service
+
+
+@if (!string.IsNullOrEmpty(error))
+{
+	<h3 class="text-danger">@error</h3>
+}
+
+<div>
+	<InputText @bind-Value=NewEmployee.Id />
+	<InputText @bind-Value=NewEmployee.Name />
+	<InputRadioGroup @bind-Value=NewEmployee.Gender>
+		<InputRadio Value="@("Nam")">Nam</InputRadio>
+		<InputRadio Value="@("Nữ")">Nữ</InputRadio>
+		<InputRadio Value="@("LGBT")">LGBT</InputRadio>
+	</InputRadioGroup>
+	<InputDate @bind-Value=NewEmployee.BirthDate />
+	<InputText @bind-Value=NewEmployee.Email />
+	<InputText @bind-Value=NewEmployee.PhoneNumber />
+	<InputText @bind-Value=NewEmployee.IdentityCard />
+	<InputSelect @bind-Value=NewEmployee.Position>
+		<option value="@EmployeePosition.Manager">Quản lý</option>
+		<option value="@EmployeePosition.Staff">Nhân viên</option>
+		<option value="@EmployeePosition.Guard">Bảo vệ</option>
+		<option value="@EmployeePosition.Director"> Giám đốc</option>
+	</InputSelect>
+	<InputDate @bind-Value=NewEmployee.StartDate />
+	<InputNumber @bind-Value=NewEmployee.Salary />
+	<InputCheckbox @bind-Value=NewEmployee.IsWorking />
+	<InputTextArea @bind-Value=NewEmployee.Address />
+</div>
+<button @onclick=Add class="btn btn-success" type="submit">Create</button>
+<hr />
+
+<div style="display:flex">
+	<InputText @bind-Value=searchById DisplayName="Mã nhân viên" />
+	<InputText @bind-Value=searchByName DisplayName="Tên nhân viên" />
+	<InputNumber @bind-Value=minSalary DisplayName="lương từ" />
+	<InputNumber @bind-Value=maxSalary DisplayName="tới" />
+	<InputDate @bind-Value=from DisplayName="Ngày sinh" />
+	<InputDate @bind-Value=to DisplayName="Ngày sinh" />
+	<button class="btn btn-info" @onclick=Filter>Lọc</button>
+	<button class="btn btn-warning" @onclick=ClearFilter>Bỏ lọc</button>
+</div>
+
+@if (!loaddata)
+{
+	<table class="table table-hover">
+		<tr>
+			<th>Id</th>
+			<th>Tên</th>
+			<th>Lương</th>
+			<th>Ngày vào làm</th>
+			<th>Giới tính</th>
+			<th>Ngày sinh</th>
+			<th>Tài khoản</th>
+		</tr>
+		@foreach (var item in Data)
+		{
+			<tr>
+				<td>@item.Id</td>
+				<td>@item.Name</td>
+				<td>@item.Salary</td>
+				<td>@item.StartDate</td>
+				<td>@item.Gender</td>
+				<td>@item.BirthDate</td>
+				<td>@item.UserName</td>
+			</tr>
+		}
+	</table>
+	<div style="display:flex;justify-items:center;align-items:center;gap:15px">
+		@for (int i = 0; i < PaginData.TotalPages; i++)
+		{
+			var pageIndex = i + 1;
+			<button class="btn btn-primary" @onclick="()=>GoToPage(pageIndex)">@(i + 1)</button>
+		}
+	</div>
+}
+
+@code {
+	int pageSize = 2;
+	int currentPage = 1;
+	bool loaddata = true;
+	string error = string.Empty;
+	PaginingResponse<EmployeeDTO> PaginData { get; set; }
+	public List<EmployeeDTO> Data { get; set; }
+	public EmployeeDTO NewEmployee { get; set; } = new();
+
+	string searchById = "";
+	string searchByName = "";
+
+	DateTime? from;
+	DateTime? to;
+
+	double minSalary = 0;
+	double maxSalary = 0;
+
+	Expression<Func<EmployeeDTO, bool>> predicate = null;
+
+	protected override async Task OnInitializedAsync()
+	{
+		await LoadData();
+		loaddata = false;
+	}
+
+	async Task LoadData()
+	{
+		PaginData = await _service.GetAllAsync(pageSize, currentPage, predicate);
+		Data = PaginData.Data.ToList();
+	}
+
+	async void Add()
+	{
+		try
+		{
+			await _service.CreateAsync(NewEmployee);
+			await LoadData();
+			StateHasChanged();
+		}
+		catch (Exception e)
+		{
+			error = e.Message;
+		}
+	}
+
+	async Task GoToPage(int page)
+	{
+		currentPage = page;
+		await LoadData();
+		StateHasChanged();
+	}
+
+	async Task Filter()
+	{
+		predicate = e =>
+		(string.IsNullOrEmpty(searchById) || e.Id.Contains(searchById)) &&
+		(string.IsNullOrEmpty(searchByName) || e.Name.Contains(searchByName)) &&
+		(from == null || e.BirthDate >= from) &&
+		(to == null || e.BirthDate <= to) &&
+		((minSalary == 0 && maxSalary == 0) || (e.Salary >= minSalary && e.Salary <= maxSalary));
+		;
+
+		PaginData = await _service.GetAllAsync(2, 1, predicate);
+		Data = PaginData.Data.ToList();
+		StateHasChanged();
+	}
+
+	async void ClearFilter()
+	{
+		predicate = null;
+		PaginData = await _service.GetAllAsync(2, 1, predicate);
+		Data = PaginData.Data.ToList();
+		StateHasChanged();
+	}
+}
